@@ -493,13 +493,21 @@
       - Dynamic outbound IP pools used by Render and Railway require `0.0.0.0/0` access list configuration in MongoDB Atlas Network Access.
 
 46. **Frontend Production Deployment Configuration & PaaS CORS Interoperability**:
+    - **Live Production Environments**:
+      - **Frontend (Vercel)**: `https://smart-interview-scheduler-chi.vercel.app`
+      - **Backend API (Render)**: `https://smart-interview-scheduler-api-flgk.onrender.com`
+      - **Health Check Endpoints**: `https://smart-interview-scheduler-api-flgk.onrender.com/health` and `/api/health` (HTTP 200)
     - **Environment-Driven Base URL**: Modified `client/src/services/api.js` to strictly enforce `VITE_API_BASE_URL` in production builds (`import.meta.env.PROD`), permanently disabling `localhost:5000` fallback and stripping accidental trailing slashes.
     - **Production Environment Config**: Added `client/.env.production` with live Render backend URL (`https://smart-interview-scheduler-api-flgk.onrender.com/api`) and validated `client/.env.example`.
     - **Production Build Verification**: Executed `vite build` inside `client/`, confirming 0 errors and verifying through static bundle inspection that `localhost:5000` is completely eliminated and replaced by the Render backend URL.
     - **SPA Client-Side Routing**: Verified `client/vercel.json` rewrite rule `{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }` and `client/public/_redirects` to eliminate 404s on browser deep-link refreshes.
-    - **Live Backend & CORS Handshake**: Verified live Render backend health at `/health` and `/api/health` (HTTP 200). Documented post-deployment `CLIENT_URL` binding on Render to allow HTTPS cross-origin credentials.
+    - **Live Backend & CORS Handshake (Resolved)**: During initial deployment, cross-origin requests from Vercel to Render were blocked until `CLIENT_URL` on Render was updated to match `https://smart-interview-scheduler-chi.vercel.app`. Following Render's rolling restart, CORS preflight and credentials handling succeeded with zero errors.
+    - **End-to-End Live Verification**: Candidate registration and onboarding flow was manually verified working against the live deployed stack (`POST /api/auth/register` succeeded over HTTPS with JWT token issuance, session storage, and dashboard redirect).
 
 ## Known Issues / Flagged Backend Discrepancies
+- **[RESOLVED] Initial CORS Block on First Production Deployment**:
+  - During the first deployment, cross-origin requests from the live Vercel frontend (`https://smart-interview-scheduler-chi.vercel.app`) to the Render backend (`https://smart-interview-scheduler-api-flgk.onrender.com`) were blocked by CORS because `CLIENT_URL` on Render was not yet set to the final Vercel domain.
+  - **Resolution**: Setting `CLIENT_URL=https://smart-interview-scheduler-chi.vercel.app` in Render's environment dashboard resolved the issue after a rolling restart. End-to-end candidate registration was then manually verified working against the live deployed stack.
 - **GET /api/admin/candidates returns inactive candidates unless `?status=active` is passed**:
   - The endpoint `GET /api/admin/candidates` defaults to returning all registered candidate accounts regardless of their `isActive` state unless explicitly filtered by `?status=active` or `?status=inactive`. Frontend administrative tables correctly display active/inactive status badges to differentiate accounts.
 

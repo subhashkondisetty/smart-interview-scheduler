@@ -4,8 +4,15 @@ This document details the exact steps, environment configurations, operational r
 
 ---
 
-## 1. System Architecture Overview
+## 1. System Architecture Overview & Live Deployments
 
+### Active Live Production Environments
+- **Frontend SPA (Vercel)**: [`https://smart-interview-scheduler-chi.vercel.app`](https://smart-interview-scheduler-chi.vercel.app)
+- **Backend API (Render)**: [`https://smart-interview-scheduler-api-flgk.onrender.com`](https://smart-interview-scheduler-api-flgk.onrender.com)
+- **API Health Check**: [`https://smart-interview-scheduler-api-flgk.onrender.com/health`](https://smart-interview-scheduler-api-flgk.onrender.com/health) (and `/api/health`)
+- **API Base Route**: `https://smart-interview-scheduler-api-flgk.onrender.com/api`
+
+### Core Components
 - **Backend**: Node.js & Express API ([`server/server.js`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Project%20smart/server/server.js))
 - **Frontend**: React 18 SPA built with Vite ([`client/`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Project%20smart/client))
 - **Database**: MongoDB Atlas (Cloud Database-as-a-Service)
@@ -22,7 +29,7 @@ This document details the exact steps, environment configurations, operational r
 | :--- | :---: | :--- | :--- |
 | `NODE_ENV` | **Yes** | `production` | Enforces production security behaviors (Helmet headers, strict CORS, rate limiting, JWT secret assertions, and error message masking). |
 | `PORT` | Auto / Yes | `5000` (or injected by PaaS) | Port for Express HTTP listener. Managed automatically by PaaS environments (e.g. Render, Railway, Heroku). |
-| `CLIENT_URL` | **Yes** | `https://smart-prep.vercel.app` | Exact origin of deployed frontend SPA. Supports comma-separated origins (e.g. `https://app.domain.com,https://preview.domain.com`). Used strictly by CORS middleware in production. |
+| `CLIENT_URL` | **Yes** | `https://smart-interview-scheduler-chi.vercel.app` | Exact origin of deployed frontend SPA. Supports comma-separated origins (e.g. `https://smart-interview-scheduler-chi.vercel.app,https://customdomain.com`). Used strictly by CORS middleware in production. |
 | `MONGODB_URI` | **Yes** | `mongodb+srv://<user>:<password>@cluster0.abcde.mongodb.net/smart_prep_prod?retryWrites=true&w=majority` | MongoDB connection string (typically a MongoDB Atlas cluster URI). |
 | `JWT_SECRET` | **Yes** | `d4f8a9e1b2c3d5e7f8a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2` | Cryptographic secret for signing session JWTs. **Enforced minimum length of 32 characters** at startup in production. |
 | `JWT_EXPIRES_IN` | No | `7d` | Lifetime of candidate and admin authentication tokens (default `7d`). |
@@ -156,19 +163,17 @@ This document details the exact steps, environment configurations, operational r
    This ensures that browser refreshes on deep links (e.g., `/candidate/dashboard`, `/candidate/slots`, `/login`, `/admin/candidates/:id`) will route through `index.html` without returning HTTP 404.
 
 5. **Deploy**:
-   Click **"Deploy"**. Vercel will build the frontend and generate a public domain (e.g., `https://smart-interview-scheduler-xxx.vercel.app`).
+   Click **"Deploy"**. Vercel built and deployed the application to:
+   [`https://smart-interview-scheduler-chi.vercel.app`](https://smart-interview-scheduler-chi.vercel.app).
 
-6. **Post-Deployment Step: Bind Vercel Domain to Backend CORS on Render**:
-   - Copy your assigned Vercel URL (e.g., `https://smart-interview-scheduler-xxx.vercel.app` — no trailing slash).
-   - Go to your **Render Dashboard** -> Open the `smart-interview-scheduler-api-flgk` web service.
-   - Navigate to the **Environment** tab.
-   - Set or update **`CLIENT_URL`** to your Vercel URL:
+6. **Post-Deployment Step: Bind Vercel Domain to Backend CORS on Render (Resolved)**:
+   - **Live Production URL**: `https://smart-interview-scheduler-chi.vercel.app` (no trailing slash).
+   - In **Render Dashboard** -> Open `smart-interview-scheduler-api-flgk` -> **Environment** tab:
      ```env
-     CLIENT_URL=https://smart-interview-scheduler-xxx.vercel.app
+     CLIENT_URL=https://smart-interview-scheduler-chi.vercel.app
      ```
-     *(If you configure custom domains or staging URLs, separate them with commas, e.g. `https://smart-interview-scheduler-xxx.vercel.app,https://myinterviewapp.com`)*.
-   - Click **Save Changes**. Render will automatically restart the web service with the updated CORS whitelist.
-   - Verify that requests from your Vercel frontend to the backend now complete over HTTPS without CORS errors.
+   - **Initial CORS Resolution**: On the initial deployment, cross-origin HTTPS requests from the Vercel frontend were blocked by Render's CORS policy (`Blocked by CORS policy`) because `CLIENT_URL` had not yet been pointed to the newly provisioned Vercel domain. Updating `CLIENT_URL` on Render and triggering the rolling restart resolved the CORS block immediately.
+   - **Live E2E Verification**: End-to-end candidate registration was manually verified working against the live deployed stack (`POST https://smart-interview-scheduler-api-flgk.onrender.com/api/auth/register` succeeded, issued auth tokens, and successfully redirected into the candidate dashboard).
 
 ### Option B: Netlify
 
@@ -229,13 +234,13 @@ The application currently uses Multer with local disk storage ([`server/middlewa
 
 Before opening the platform to public users, verify these 7 checkpoints:
 
-- [ ] **1. JWT Secret Entropy**: Verify `JWT_SECRET` is at least 32 random characters (the server refuses to boot in `production` mode if it is shorter).
-- [ ] **2. CORS Whitelisting**: Verify `CLIENT_URL` in backend `.env` matches the deployed frontend URL with exact protocol (`https://`) and no trailing slash.
-- [ ] **3. MongoDB Atlas Whitelist**: Verify `0.0.0.0/0` is allowed in Atlas Network Access.
-- [ ] **4. Build Command**: Execute `npm --prefix client run build` locally to ensure 0 TypeScript/Vite bundling errors.
-- [ ] **5. Start Command**: Verify `npm --prefix server start` executes `node server.js` cleanly.
-- [ ] **6. Email Service Fallback**: Verify whether SMTP credentials are supplied or if fallback simulated mail logging is expected.
-- [ ] **7. SPA Routing Rewrite**: Verify `vercel.json` or `_redirects` is in place so page reloads on sub-routes do not return HTTP 404.
+- [x] **1. JWT Secret Entropy**: Verified `JWT_SECRET` is at least 32 random characters (the server enforces this at boot in `production` mode).
+- [x] **2. CORS Whitelisting**: `CLIENT_URL` configured in Render environment variables matching `https://smart-interview-scheduler-chi.vercel.app`.
+- [x] **3. MongoDB Atlas Whitelist**: `0.0.0.0/0` allowed in Atlas Network Access.
+- [x] **4. Build Command**: `npm --prefix client run build` compiles with 0 errors (`dist/` generated with dead-code eliminated localhost URLs).
+- [x] **5. Start Command**: `npm --prefix server start` executes `node server.js` cleanly on Render.
+- [x] **6. Email Service Fallback**: Verified SMTP simulated fallback logging when credentials are unset.
+- [x] **7. SPA Routing Rewrite**: Verified `client/vercel.json` rewrite `{ "source": "/(.*)", "destination": "/index.html" }` prevents 404s on browser refreshes.
 
 ---
 
@@ -243,10 +248,10 @@ Before opening the platform to public users, verify these 7 checkpoints:
 
 Perform this sequential smoke test immediately following deployment:
 
-1. **Health Check**: Open `https://smart-interview-scheduler-api-flgk.onrender.com/health` (or `https://smart-interview-scheduler-api-flgk.onrender.com/api/health`) -> expect HTTP 200 `{ status: 'ok', message: 'Smart Interview Scheduler API is running' }` (confirms Express + Helmet are live and healthy on Render).
-2. **Registration & Welcome**: Register a candidate account at `/register` -> verify successful dashboard redirect.
+1. **Health Check**: Open `https://smart-interview-scheduler-api-flgk.onrender.com/health` (or `https://smart-interview-scheduler-api-flgk.onrender.com/api/health`) -> expect HTTP 200 `{ status: 'ok', message: 'Smart Interview Scheduler API is running' }` (confirms Express + Helmet are live and healthy on Render). **[VERIFIED - HTTP 200]**
+2. **Registration & Welcome**: Register a candidate account at `https://smart-interview-scheduler-chi.vercel.app/register` -> verify successful dashboard redirect. **[VERIFIED - Tested end-to-end against live deployed stack]**
 3. **Profile & Resume**: Complete candidate profile, upload a sample PDF resume -> verify completion percentage updates to 100%.
 4. **Interview Booking**: Navigate to `/candidate/slots` -> book an available interview -> verify confirmation modal.
 5. **Assessment Arena**: Navigate to `/candidate/assessments` -> start an assessment -> submit answers -> verify score report is rendered.
 6. **Administrative 360 View**: Log in as admin -> inspect `/admin/dashboard` -> open `/admin/candidates/:id` -> download candidate's uploaded resume -> verify blob download succeeds.
-7. **Cross-Origin & SSL**: Verify browser dev tools console reports zero CORS errors and all resources load securely over HTTPS.
+7. **Cross-Origin & SSL**: Verify browser dev tools console reports zero CORS errors and all resources load securely over HTTPS. **[VERIFIED - CORS origin whitelisted for https://smart-interview-scheduler-chi.vercel.app]**
