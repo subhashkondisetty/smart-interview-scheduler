@@ -43,7 +43,7 @@ This document details the exact steps, environment configurations, operational r
 
 | Variable | Required | Example / Recommended Value | Description |
 | :--- | :---: | :--- | :--- |
-| `VITE_API_BASE_URL` | **Yes** | `https://api.smartprep.com/api` | Base URL of the deployed Express backend API including the `/api` prefix (must NOT have a trailing slash). |
+| `VITE_API_BASE_URL` | **Yes** | `https://smart-interview-scheduler-api-flgk.onrender.com/api` | Base URL of the deployed Express backend API including the `/api` prefix (must NOT have a trailing slash). |
 | `VITE_MAX_FILE_SIZE_MB` | No | `5` | Maximum client-side resume validation size in megabytes. Must match `MAX_FILE_SIZE_MB` in backend. |
 
 ---
@@ -74,18 +74,24 @@ This document details the exact steps, environment configurations, operational r
 
 ## 4. Backend Deployment Steps (e.g. Render / Railway / VPS)
 
-### Option A: Render (Web Service)
+### Option A: Render (Web Service) — Active Deployment
+
+- **Live Deployed Backend URL**: `https://smart-interview-scheduler-api-flgk.onrender.com`
+- **Health Check Path**: `/health` (and `/api/health`)
+- **API Base Route**: `https://smart-interview-scheduler-api-flgk.onrender.com/api`
 
 1. Link your GitHub repository in Render dashboard.
 2. Select **Web Service**.
 3. Set the configuration:
    - **Environment**: `Node`
+   - **Plan**: `Free`
    - **Root Directory**: `server`
    - **Build Command**: `npm install`
    - **Start Command**: `npm start` (or `node server.js`)
 4. In the **Environment Variables** tab, input all backend environment variables from Section 2.
 5. In **Health Check Path**, enter: `/health` (or `/api/health`).
 6. Click **Create Web Service**.
+7. Once deployed, note down your web service URL (e.g., `https://smart-interview-scheduler-api-flgk.onrender.com`).
 
 ### Option B: Railway
 
@@ -118,17 +124,28 @@ This document details the exact steps, environment configurations, operational r
 
 ### Option A: Vercel (Recommended)
 
-1. Import your Git repository into Vercel.
-2. Configure project settings:
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: `client`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-3. Add Environment Variables:
-   - `VITE_API_BASE_URL`: `https://your-backend-api.onrender.com/api`
-   - `VITE_MAX_FILE_SIZE_MB`: `5`
-4. Add SPA Client-Side Routing Rewrite:
-   Create `client/vercel.json` with the following rule so deep links (`/candidate/dashboard`, `/login`, etc.) do not 404:
+1. **Import Project into Vercel**:
+   - Navigate to [Vercel Dashboard](https://vercel.com/dashboard) and click **"Add New..."** -> **"Project"**.
+   - Select your GitHub repository: `smart-interview-scheduler`.
+
+2. **Configure Project Settings**:
+   - **Framework Preset**: `Vite` (Vercel automatically detects Vite).
+   - **Root Directory**: Click **"Edit"**, select `client`, and click **"Save"**.
+   - **Build Command**: `npm run build` (default).
+   - **Output Directory**: `dist` (default).
+   - **Install Command**: `npm install` (default).
+
+3. **Configure Environment Variables in Vercel**:
+   In the **Environment Variables** expandable section, add the following key-value pairs (for Production, Preview, and Development environments):
+   - **`VITE_API_BASE_URL`**:
+     `https://smart-interview-scheduler-api-flgk.onrender.com/api`
+     *(Must contain the exact backend URL with `/api` and no trailing slash)*
+   - **`VITE_MAX_FILE_SIZE_MB`**:
+     `5`
+     *(Matches the backend 5 MB resume upload size limit)*
+
+4. **Verify SPA Client-Side Routing Rewrite**:
+   The repository already includes [`client/vercel.json`](file:///c:/Users/SUBHASH/OneDrive/Desktop/Project%20smart/client/vercel.json) with:
    ```json
    {
      "rewrites": [
@@ -136,7 +153,22 @@ This document details the exact steps, environment configurations, operational r
      ]
    }
    ```
-5. Deploy.
+   This ensures that browser refreshes on deep links (e.g., `/candidate/dashboard`, `/candidate/slots`, `/login`, `/admin/candidates/:id`) will route through `index.html` without returning HTTP 404.
+
+5. **Deploy**:
+   Click **"Deploy"**. Vercel will build the frontend and generate a public domain (e.g., `https://smart-interview-scheduler-xxx.vercel.app`).
+
+6. **Post-Deployment Step: Bind Vercel Domain to Backend CORS on Render**:
+   - Copy your assigned Vercel URL (e.g., `https://smart-interview-scheduler-xxx.vercel.app` — no trailing slash).
+   - Go to your **Render Dashboard** -> Open the `smart-interview-scheduler-api-flgk` web service.
+   - Navigate to the **Environment** tab.
+   - Set or update **`CLIENT_URL`** to your Vercel URL:
+     ```env
+     CLIENT_URL=https://smart-interview-scheduler-xxx.vercel.app
+     ```
+     *(If you configure custom domains or staging URLs, separate them with commas, e.g. `https://smart-interview-scheduler-xxx.vercel.app,https://myinterviewapp.com`)*.
+   - Click **Save Changes**. Render will automatically restart the web service with the updated CORS whitelist.
+   - Verify that requests from your Vercel frontend to the backend now complete over HTTPS without CORS errors.
 
 ### Option B: Netlify
 
@@ -211,7 +243,7 @@ Before opening the platform to public users, verify these 7 checkpoints:
 
 Perform this sequential smoke test immediately following deployment:
 
-1. **Health Check**: Open `https://api.yourdomain.com/health` (or `/api/health`) -> expect HTTP 200 `{ status: 'ok', message: 'Smart Interview Scheduler API is running' }` (confirms Express + Helmet are live and healthy).
+1. **Health Check**: Open `https://smart-interview-scheduler-api-flgk.onrender.com/health` (or `https://smart-interview-scheduler-api-flgk.onrender.com/api/health`) -> expect HTTP 200 `{ status: 'ok', message: 'Smart Interview Scheduler API is running' }` (confirms Express + Helmet are live and healthy on Render).
 2. **Registration & Welcome**: Register a candidate account at `/register` -> verify successful dashboard redirect.
 3. **Profile & Resume**: Complete candidate profile, upload a sample PDF resume -> verify completion percentage updates to 100%.
 4. **Interview Booking**: Navigate to `/candidate/slots` -> book an available interview -> verify confirmation modal.

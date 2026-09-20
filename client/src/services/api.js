@@ -2,7 +2,22 @@ import axios from 'axios';
 
 export const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Determine base API URL: strictly environment-driven in production, localhost fallback only in dev
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (import.meta.env.PROD) {
+    console.error(
+      '[API Config] Critical: VITE_API_BASE_URL is not set in production. Localhost fallback is disabled in production builds.'
+    );
+    return '';
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
