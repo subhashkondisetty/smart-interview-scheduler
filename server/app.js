@@ -170,6 +170,14 @@ app.get(['/health', '/api/health'], (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Smart Interview Scheduler API is running' });
 });
 
+// 404 Handler for unmatched routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+  });
+});
+
 // Centralized error handling middleware
 app.use(errorHandler);
 
