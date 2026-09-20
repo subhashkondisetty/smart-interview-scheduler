@@ -14,6 +14,9 @@ const swaggerSpec = require('./docs/swaggerSpec');
 
 const app = express();
 
+// Trust reverse proxy (Render, Heroku, AWS ALB, Cloudflare) for accurate client IP in rate limiting
+app.set('trust proxy', 1);
+
 // 1. Security HTTP Headers
 app.use(helmet());
 
@@ -91,10 +94,10 @@ const generalLimiter = rateLimit({
 });
 app.use('/api', generalLimiter);
 
-// Strict Authentication Limiter: 10 attempts per 15 minutes per IP
+// Strict Authentication Limiter: 50 attempts per 15 minutes per IP
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

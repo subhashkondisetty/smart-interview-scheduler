@@ -7,7 +7,7 @@
  *
  * Features:
  * - Render cold-start retry with up to 90s tolerance
- * - Idempotent test setup (admin login, temporary slot and assessment creation)
+ * - Idempotent test setup (admin login, self-cleaning fixtures, temporary slot and assessment creation)
  * - Thorough testing across Auth, RBAC, Profile, Resume, Slots, Bookings,
  *   Assessments, Scoring, Notifications, Error Handling, CORS, and Injection Guards
  * - 100% complete database cleanup at the end (zero residual test data left in DB)
@@ -110,8 +110,24 @@ async function runAudit() {
       throw new Error('Admin authentication required for testing Dimensions 6 & 7');
     }
 
-    // Provision temporary slot (1 day in future)
-    const slotStartTime = new Date(Date.now() + 3600 * 1000 * 24);
+    // Clean up any prior aborted audit slots
+    try {
+      const prevSlots = await request(`${API_URL}/admin/interview-slots?limit=50`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      for (const s of prevSlots.data.data?.slots || []) {
+        if (s.title && s.title.startsWith('Audit Test Slot')) {
+          await request(`${API_URL}/admin/interview-slots/${s._id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${adminToken}` },
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    // Provision temporary slot (randomized far-future slot to guarantee zero overlap)
+    const randomOffsetHours = 48 + Math.floor(Math.random() * 500);
+    const slotStartTime = new Date(Date.now() + randomOffsetHours * 3600 * 1000);
     const slotEndTime = new Date(slotStartTime.getTime() + 45 * 60 * 1000); // 45 mins
     const slotRes = await request(`${API_URL}/admin/interview-slots`, {
       method: 'POST',
@@ -497,8 +513,8 @@ async function runAudit() {
       logCheck('DIM-7', 'Candidate starts timed assessment attempt', startOk, `Attempt ID: ${createdAttemptId}`);
 
       if (startOk) {
-        // Submit answer (Option 1 is correct)
-        const submitRes = await request(`${API_URL}/candidate/assessments/attempts/${createdAttemptId}/submit`, {
+        // Submit answer (Option 1 is correct) via POST /api/candidate/attempts/:attemptId/submit
+        const submitRes = await request(`${API_URL}/candidate/attempts/${createdAttemptId}/submit`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -508,7 +524,7 @@ async function runAudit() {
             answers: [
               {
                 questionId: createdQuestionId,
-                selectedOption: 1,
+                selectedOptionIndex: 1,
               },
             ],
           }),
