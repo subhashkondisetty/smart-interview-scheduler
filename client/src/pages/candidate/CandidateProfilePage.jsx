@@ -59,6 +59,7 @@ const CandidateProfilePage = () => {
     portfolioUrl: '',
     experienceLevel: 'entry',
     yearsOfExperience: 0,
+    targetRole: '',
     skills: [],
     education: [],
   });
@@ -94,6 +95,7 @@ const CandidateProfilePage = () => {
             portfolioUrl: p.portfolioUrl || '',
             experienceLevel: p.experienceLevel || 'entry',
             yearsOfExperience: p.yearsOfExperience ?? 0,
+            targetRole: p.targetRole || '',
             skills: Array.isArray(p.skills) ? p.skills : [],
             education: Array.isArray(p.education) ? p.education : [],
           });
@@ -252,6 +254,7 @@ const CandidateProfilePage = () => {
         portfolioUrl: form.portfolioUrl.trim(),
         experienceLevel: form.experienceLevel,
         yearsOfExperience: Number(form.yearsOfExperience) || 0,
+        targetRole: form.targetRole ? form.targetRole : null,
         skills: form.skills,
         education: form.education.map((edu) => ({
           institution: edu.institution ? edu.institution.trim() : '',
@@ -395,7 +398,14 @@ const CandidateProfilePage = () => {
       {/* Page Header */}
       <div className="profile-page-header">
         <div>
-          <span className="badge badge-candidate">Candidate Space</span>
+          <div className="badge-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+            <span className="badge badge-candidate">Candidate Space</span>
+            {form.targetRole && (
+              <span className="badge badge-target-role" data-testid="header-target-role-badge">
+                🎯 {form.targetRole}
+              </span>
+            )}
+          </div>
           <h1 className="profile-title">Profile & Resume</h1>
           <p className="profile-subtitle">
             Manage your personal background, technical skills, education, and resume to qualify for interviews.
@@ -657,6 +667,29 @@ const CandidateProfilePage = () => {
                     <span className="field-error-text">{fieldErrors.yearsOfExperience}</span>
                   )}
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="targetRole">Target Role</label>
+                <select
+                  id="targetRole"
+                  name="targetRole"
+                  className="form-control"
+                  value={form.targetRole}
+                  onChange={handleInputChange}
+                  data-testid="select-targetRole"
+                >
+                  <option value="">Select your target role (Optional)</option>
+                  <option value="Frontend Developer">Frontend Developer</option>
+                  <option value="Backend Developer">Backend Developer</option>
+                  <option value="Full Stack Developer">Full Stack Developer</option>
+                  <option value="Mobile Developer">Mobile Developer</option>
+                  <option value="Data Scientist/ML Engineer">Data Scientist/ML Engineer</option>
+                  <option value="DevOps Engineer">DevOps Engineer</option>
+                  <option value="QA/SDET">QA/SDET</option>
+                  <option value="Other">Other</option>
+                </select>
+                <small className="field-hint">Primary engineering specialization for interviews and assessments</small>
               </div>
 
               <div className="form-group">

@@ -344,6 +344,19 @@ body {
   color: #b91c1c;
 }
 
+.badge-target-role {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 /* Alerts */
 .alert {
   display: flex;

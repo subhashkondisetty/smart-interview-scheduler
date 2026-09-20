@@ -54,6 +54,7 @@ describe('Admin Candidate Management & Lifecycle Controller', () => {
       headline: 'Principal Systems Architect (C++/Distributed)',
       skills: ['C++', 'Distributed Systems', 'Go', 'Kubernetes'],
       experienceLevel: 'lead',
+      targetRole: 'DevOps Engineer',
       yearsOfExperience: 10,
       profileCompletionPercentage: 95,
       education: [
@@ -88,6 +89,7 @@ describe('Admin Candidate Management & Lifecycle Controller', () => {
       headline: 'Full Stack Engineer (Node.js/React)',
       skills: ['React', 'Node.js', 'TypeScript', 'MongoDB'],
       experienceLevel: 'mid',
+      targetRole: 'Data Scientist/ML Engineer',
       yearsOfExperience: 4,
       profileCompletionPercentage: 70,
     });
@@ -235,6 +237,46 @@ describe('Admin Candidate Management & Lifecycle Controller', () => {
       expect(candidates[0].email).toBe('candidatea_test@example.com');
       expect(candidates[0].profile.experienceLevel).toBe('lead');
     });
+
+    test('2e. Filters by targetRole="Data Scientist/ML Engineer" (auto-encoded / with slash)', async () => {
+      // Using query object (mirrors axios params auto-encoding Data%20Scientist%2FML%20Engineer)
+      const res = await request(app)
+        .get('/api/admin/candidates')
+        .query({ targetRole: 'Data Scientist/ML Engineer' })
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      const { candidates, pagination } = res.body.data;
+      expect(pagination.total).toBe(1);
+      expect(candidates.length).toBe(1);
+      expect(candidates[0].email).toBe('candidateb_test@example.com');
+      expect(candidates[0].profile.targetRole).toBe('Data Scientist/ML Engineer');
+    });
+
+    test('2f. Filters by targetRole="DevOps Engineer"', async () => {
+      const res = await request(app)
+        .get('/api/admin/candidates?targetRole=DevOps%20Engineer')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      const { candidates, pagination } = res.body.data;
+      expect(pagination.total).toBe(1);
+      expect(candidates.length).toBe(1);
+      expect(candidates[0].email).toBe('candidatea_test@example.com');
+      expect(candidates[0].profile.targetRole).toBe('DevOps Engineer');
+    });
+
+    test('2g. Ignores targetRole="all" and returns all candidates', async () => {
+      const res = await request(app)
+        .get('/api/admin/candidates?targetRole=all')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      const { candidates, pagination } = res.body.data;
+      expect(pagination.total).toBe(3);
+      expect(candidates.length).toBe(3);
+    });
   });
 
   describe('3. ReDoS Defense & Regex Special Characters Search', () => {
@@ -274,6 +316,19 @@ describe('Admin Candidate Management & Lifecycle Controller', () => {
       // Assert prompt execution without ReDoS catastrophic backtracking
       expect(elapsed).toBeLessThan(2000);
     });
+
+    test('3d. Searches candidates across profile.targetRole using escapeRegex', async () => {
+      const res = await request(app)
+        .get('/api/admin/candidates?search=Scientist')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      const { candidates } = res.body.data;
+      expect(candidates.length).toBe(1);
+      expect(candidates[0].email).toBe('candidateb_test@example.com');
+      expect(candidates[0].profile.targetRole).toBe('Data Scientist/ML Engineer');
+    });
   });
 
   describe('4. Candidate 360 Detail View & Schema Foreign Key Verification', () => {
@@ -308,6 +363,7 @@ describe('Admin Candidate Management & Lifecycle Controller', () => {
       expect(candidate.email).toBe('candidatea_test@example.com');
       expect(candidate.profile.fullName).toBe('Alice Walker (Lead)');
       expect(candidate.profile.headline).toContain('Principal Systems Architect');
+      expect(candidate.profile.targetRole).toBe('DevOps Engineer');
       expect(candidate.profile.resume.fileName).toBe('alice_resume.pdf');
 
       // Bookings verified

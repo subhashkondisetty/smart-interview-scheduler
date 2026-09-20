@@ -20,7 +20,7 @@ const getAdminCandidates = asyncHandler(async (req, res) => {
   const requestedLimit = parseInt(req.query.limit, 10);
   const limit = !isNaN(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 100) : 10;
 
-  const { search, status, experienceLevel, sortBy, sortOrder } = req.query;
+  const { search, status, experienceLevel, targetRole, sortBy, sortOrder } = req.query;
 
   // Base match: only candidates
   const matchUser = { role: 'candidate' };
@@ -51,7 +51,7 @@ const getAdminCandidates = asyncHandler(async (req, res) => {
 
   const filterConditions = [];
 
-  // Search filtering with ReDoS-safe regex escaping
+  // Search filtering with ReDoS-safe regex escaping (reuses escapeRegex from utils/regexEscape.js)
   if (typeof search === 'string' && search.trim().length > 0) {
     const escapedSearch = escapeRegex(search.trim());
     const searchRegex = new RegExp(escapedSearch, 'i');
@@ -62,6 +62,7 @@ const getAdminCandidates = asyncHandler(async (req, res) => {
         { 'profile.headline': searchRegex },
         { 'profile.skills': searchRegex },
         { 'profile.location': searchRegex },
+        { 'profile.targetRole': searchRegex },
       ],
     });
   }
@@ -74,6 +75,17 @@ const getAdminCandidates = asyncHandler(async (req, res) => {
   ) {
     filterConditions.push({
       'profile.experienceLevel': experienceLevel.trim(),
+    });
+  }
+
+  // Target role filtering
+  if (
+    typeof targetRole === 'string' &&
+    targetRole.trim().length > 0 &&
+    targetRole !== 'all'
+  ) {
+    filterConditions.push({
+      'profile.targetRole': targetRole.trim(),
     });
   }
 
@@ -119,6 +131,7 @@ const getAdminCandidates = asyncHandler(async (req, res) => {
               headline: { $ifNull: ['$profile.headline', ''] },
               skills: { $ifNull: ['$profile.skills', []] },
               experienceLevel: { $ifNull: ['$profile.experienceLevel', 'entry'] },
+              targetRole: { $ifNull: ['$profile.targetRole', null] },
               yearsOfExperience: { $ifNull: ['$profile.yearsOfExperience', 0] },
               profileCompletionPercentage: { $ifNull: ['$profile.profileCompletionPercentage', 0] },
               resume: '$profile.resume',

@@ -48,14 +48,24 @@ describe('Admin Candidate Results & Notifications Test Suite', () => {
       headline: 'Senior Cloud Architect (Node.js)',
       skills: ['Node.js', 'C++', 'Distributed Systems'],
       experienceLevel: 'senior',
+      targetRole: 'Backend Developer',
     });
 
-    // Seed Candidate B (Active, Unprofiled)
+    // Seed Candidate B (Active, Profiled with targetRole)
     candidateUserB = await User.create({
       email: 'candidate_b@test.com',
       password: 'password123',
       role: 'candidate',
       isActive: true,
+    });
+
+    await CandidateProfile.create({
+      user: candidateUserB._id,
+      fullName: 'Bob Smith',
+      headline: 'ML Engineer & Data Scientist',
+      skills: ['Python', 'TensorFlow', 'PyTorch'],
+      experienceLevel: 'mid',
+      targetRole: 'Data Scientist/ML Engineer',
     });
 
     // Seed Inactive Candidate (Deactivated account)
@@ -231,6 +241,7 @@ describe('Admin Candidate Results & Notifications Test Suite', () => {
       expect(resAttempt1.candidate.email).toBe('candidate_a@test.com');
       expect(resAttempt1.candidate.fullName).toBe('Alice Walker');
       expect(resAttempt1.candidate.experienceLevel).toBe('senior');
+      expect(resAttempt1.candidate.targetRole).toBe('Backend Developer');
       expect(resAttempt1.assessment.title).toBe('Distributed Systems & Microservices');
       expect(resAttempt1.assessment.difficulty).toBe('advanced');
       expect(resAttempt1.score).toBe(8);
@@ -288,6 +299,33 @@ describe('Admin Candidate Results & Notifications Test Suite', () => {
       expect(candBRes.body.data.results[0].candidate.email).toBe('candidate_b@test.com');
     });
 
+    test('Filter by targetRole: filters attempts by candidate targetRole (including Data Scientist/ML Engineer with slash)', async () => {
+      // Filter targetRole=Backend Developer -> returns Alice's 2 attempts
+      const backendRes = await request(app)
+        .get('/api/admin/results?targetRole=Backend%20Developer')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(backendRes.status).toBe(200);
+      expect(backendRes.body.data.results.length).toBe(2);
+      expect(backendRes.body.data.results.every((r) => r.candidate.targetRole === 'Backend Developer')).toBe(true);
+
+      // Filter targetRole=Data Scientist/ML Engineer (auto-encoded / with slash) -> returns Bob's 1 attempt
+      const mlRes = await request(app)
+        .get('/api/admin/results')
+        .query({ targetRole: 'Data Scientist/ML Engineer' })
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(mlRes.status).toBe(200);
+      expect(mlRes.body.data.results.length).toBe(1);
+      expect(mlRes.body.data.results[0].candidate.targetRole).toBe('Data Scientist/ML Engineer');
+      expect(mlRes.body.data.results[0].candidate.email).toBe('candidate_b@test.com');
+
+      // Filter targetRole=all -> returns all 3 attempts
+      const allRes = await request(app)
+        .get('/api/admin/results?targetRole=all')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(allRes.status).toBe(200);
+      expect(allRes.body.data.results.length).toBe(3);
+    });
+
     test('ReDoS-Safe Search: literal matching across candidate email, profile name, and test title', async () => {
       // Search by candidate name
       const nameRes = await request(app)
@@ -327,6 +365,7 @@ describe('Admin Candidate Results & Notifications Test Suite', () => {
       const detail = res.body.data.result;
       expect(detail.candidate.fullName).toBe('Alice Walker');
       expect(detail.candidate.email).toBe('candidate_a@test.com');
+      expect(detail.candidate.targetRole).toBe('Backend Developer');
       expect(detail.assessment.title).toBe('Distributed Systems & Microservices');
       expect(detail.score).toBe(8);
       expect(detail.percentage).toBe(80);

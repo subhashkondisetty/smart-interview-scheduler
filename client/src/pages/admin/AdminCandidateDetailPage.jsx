@@ -143,6 +143,11 @@ const AdminCandidateDetailPage = () => {
           <div className="candidate-header-text">
             <div className="candidate-name-row">
               <h2 data-testid="detail-display-name">{displayName}</h2>
+              {profile?.targetRole && (
+                <span className="badge badge-target-role" data-testid="detail-target-role-badge">
+                  🎯 {profile.targetRole}
+                </span>
+              )}
               <span
                 className={`status-pill ${
                   candidate.isActive ? 'status-active' : 'status-inactive'
@@ -199,12 +204,12 @@ const AdminCandidateDetailPage = () => {
         </div>
 
         <div className="stat-card">
-          <span className="stat-label">Experience Tier</span>
-          <span className="stat-value" data-testid="detail-experience-stat">
-            {(profile.experienceLevel || 'entry').toUpperCase()}
+          <span className="stat-label">Target Role & Tier</span>
+          <span className="stat-value" data-testid="detail-experience-stat" style={{ fontSize: '1.25rem' }}>
+            {profile?.targetRole || (profile?.experienceLevel || 'entry').toUpperCase()}
           </span>
           <span className="stat-subtext">
-            {profile.yearsOfExperience || 0} years professional experience
+            {(profile?.experienceLevel || 'entry').toUpperCase()} • {profile?.yearsOfExperience || 0} yrs experience
           </span>
         </div>
 

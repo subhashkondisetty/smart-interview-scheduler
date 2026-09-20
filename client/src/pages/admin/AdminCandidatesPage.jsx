@@ -23,6 +23,7 @@ const AdminCandidatesPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [experienceFilter, setExperienceFilter] = useState('all');
+  const [targetRoleFilter, setTargetRoleFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
 
@@ -44,7 +45,7 @@ const AdminCandidatesPage = () => {
   // Reset page to 1 whenever filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [debouncedSearch, statusFilter, experienceFilter, sortBy, sortOrder]);
+  }, [debouncedSearch, statusFilter, experienceFilter, targetRoleFilter, sortBy, sortOrder]);
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
@@ -56,6 +57,7 @@ const AdminCandidatesPage = () => {
         search: debouncedSearch.trim() || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         experienceLevel: experienceFilter !== 'all' ? experienceFilter : undefined,
+        targetRole: targetRoleFilter !== 'all' ? targetRoleFilter : undefined,
         sortBy,
         sortOrder,
       };
@@ -78,7 +80,7 @@ const AdminCandidatesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, debouncedSearch, statusFilter, experienceFilter, sortBy, sortOrder]);
+  }, [pagination.page, pagination.limit, debouncedSearch, statusFilter, experienceFilter, targetRoleFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchCandidates();
@@ -114,6 +116,7 @@ const AdminCandidatesPage = () => {
     setDebouncedSearch('');
     setStatusFilter('all');
     setExperienceFilter('all');
+    setTargetRoleFilter('all');
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -240,6 +243,26 @@ const AdminCandidatesPage = () => {
           </select>
         </div>
 
+        {/* Target Role Dropdown */}
+        <div className="filter-select-wrapper">
+          <select
+            className="filter-select"
+            value={targetRoleFilter}
+            onChange={(e) => setTargetRoleFilter(e.target.value)}
+            data-testid="target-role-filter-select"
+          >
+            <option value="all">All Target Roles</option>
+            <option value="Frontend Developer">Frontend Developer</option>
+            <option value="Backend Developer">Backend Developer</option>
+            <option value="Full Stack Developer">Full Stack Developer</option>
+            <option value="Mobile Developer">Mobile Developer</option>
+            <option value="Data Scientist/ML Engineer">Data Scientist/ML Engineer</option>
+            <option value="DevOps Engineer">DevOps Engineer</option>
+            <option value="QA/SDET">QA/SDET</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
         {/* Items Per Page */}
         <div className="limit-selector-wrapper">
           <span className="limit-label">Show:</span>
@@ -344,9 +367,16 @@ const AdminCandidatesPage = () => {
                       {/* Experience Level & Skills */}
                       <td>
                         <div className="experience-cell">
-                          <span className={`exp-badge exp-${experienceLevel}`}>
-                            {experienceLevel.toUpperCase()}
-                          </span>
+                          <div className="role-and-exp-badges" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                            {cand.profile?.targetRole && (
+                              <span className="badge badge-target-role" data-testid={`candidate-target-role-${cand._id}`}>
+                                🎯 {cand.profile.targetRole}
+                              </span>
+                            )}
+                            <span className={`exp-badge exp-${experienceLevel}`}>
+                              {experienceLevel.toUpperCase()}
+                            </span>
+                          </div>
                           <div className="skills-chip-list">
                             {skills.slice(0, 3).map((skill, idx) => (
                               <span key={idx} className="skill-chip">

@@ -1,6 +1,6 @@
 # Smart Interview Scheduler & Mock Assessment Platform (SmartPrep)
 
-[![Backend Tests](https://img.shields.io/badge/backend%20tests-277%20passed%20%7C%2024%20suites-brightgreen.svg)](#testing--quality-assurance)
+[![Backend Tests](https://img.shields.io/badge/backend%20tests-286%20passed%20%7C%2024%20suites-brightgreen.svg)](#testing--quality-assurance)
 [![Frontend Deployment](https://img.shields.io/badge/frontend-Vercel%20Live-black.svg?logo=vercel)](https://smart-interview-scheduler-chi.vercel.app)
 [![Backend Deployment](https://img.shields.io/badge/backend-Render%20Live-46E3B7.svg?logo=render)](https://smart-interview-scheduler-api-flgk.onrender.com/health)
 [![Database](https://img.shields.io/badge/database-MongoDB%20Atlas-47A248.svg?logo=mongodb)](https://www.mongodb.com/cloud/atlas)
@@ -127,7 +127,7 @@ All features listed below are **100% implemented, verified by automated test sui
 
 ### 2. Candidate Experience & Workflows
 - **Interactive Candidate Profile (`/candidate/profile`)**:
-  - Full profile management with bio, headline, phone number, location, and social links.
+  - Full profile management with bio, headline, phone number, location, target role selection (Frontend, Backend, Full Stack, Mobile, Data Scientist/ML Engineer, DevOps, QA/SDET, Other), and social links.
   - Interactive skills manager with custom skill tags.
   - Multi-entry education history manager (degree, institution, graduation year).
   - Dynamic profile completion score calculation updated automatically upon profile edits.
@@ -154,7 +154,7 @@ All features listed below are **100% implemented, verified by automated test sui
   - Chronological historical attempt log with status and score filtering.
   - Aggregate topic mastery analytics compiling performance across all completed tests.
 - **Candidate Dashboard & In-App Notifications (`/candidate/dashboard`, `/candidate/notifications`)**:
-  - Aggregated KPI cards: profile completion, next scheduled interview, recent assessment scores, and pending action items.
+  - Aggregated KPI cards: profile completion, target role badge, next scheduled interview, recent assessment scores, and pending action items.
   - Notification center with unread count badges, paginated inbox, mark-as-read, and mark-all-read controls.
 
 ### 3. Administrator Operations & Studio
@@ -175,10 +175,11 @@ All features listed below are **100% implemented, verified by automated test sui
 - **Candidate Performance Review (`/admin/results`)**:
   - Cross-collection aggregation joining candidate profiles, user accounts, assessments, and attempt records.
   - Real-time KPI summaries (total attempts, pass rate, average score).
-  - Searchable by candidate name, email, or assessment title (with ReDoS-safe regex escaping).
+  - Searchable by candidate name, email, or assessment title (with ReDoS-safe regex escaping) and filterable by target role and evaluation outcome.
   - Detailed score report inspection modal displaying question-level responses and topic breakdowns.
 - **Candidate Directory & Cascade Deletion (`/admin/candidates`)**:
-  - Searchable candidate roster with account status indicators and resume download access.
+  - Searchable candidate roster with account status indicators, target role filtering, and resume download access.
+  - Candidate 360 view with target role categorization and full attempt/booking audit histories.
   - GDPR-compliant cascade deletion (`DELETE /api/admin/candidates/:id`): atomically removes candidate user records, profiles, resume files from disk, assessment attempts, notifications, and cancels bookings while releasing slot capacities.
 - **Broadcast & Notification Center (`/admin/broadcast`)**:
   - System-wide, candidate-wide, or targeted in-app announcement broadcasting.
@@ -307,13 +308,13 @@ Run all 24 backend test suites against an in-memory MongoDB runner:
 cd server
 npm test -- --runInBand
 ```
-**Current Status**: **277 tests passed across 24 test suites (100% pass rate, 0 open handles)**.
+**Current Status**: **286 tests passed across 24 test suites (100% pass rate, 0 open handles)**.
 
 ```text
 Test Suites: 24 passed, 24 total
-Tests:       277 passed, 277 total
+Tests:       286 passed, 286 total
 Snapshots:   0 total
-Time:        19.001 s
+Time:        19.349 s
 ```
 
 ### 2. Continuous Multi-Persona User Journeys (Puppeteer E2E)
@@ -477,6 +478,9 @@ While all core requirements and operational workflows are fully implemented and 
 5. **Dark Mode Theme Support**:
    - *Current State*: Unified clean, accessible light design system with focus-visible states and semantic HTML.
    - *Future Plan*: Implement a CSS variable-driven dark theme with system preference detection and local toggle persistence.
+6. **Role-Specific Assessment & Slot Matching & Resume Auto-Detection**:
+   - *Current State*: Candidates select an optional `targetRole` (Frontend, Backend, Full Stack, Mobile, Data Scientist/ML Engineer, DevOps, QA/SDET, Other) on their profile, which is surfaced across candidate dashboards and admin search/filter tools. Assessments and interview slots remain general/skill-based.
+   - *Future Plan*: Tag assessment modules and interview slots with target roles to provide personalized recommendation feeds for candidates, and integrate AI resume parsing to automatically detect and suggest the candidate's target role upon PDF upload.
 
 ---
 

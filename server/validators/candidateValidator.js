@@ -8,6 +8,17 @@ const isValidUrl = (urlStr) => {
   }
 };
 
+const ALLOWED_TARGET_ROLES = [
+  'Frontend Developer',
+  'Backend Developer',
+  'Full Stack Developer',
+  'Mobile Developer',
+  'Data Scientist/ML Engineer',
+  'DevOps Engineer',
+  'QA/SDET',
+  'Other',
+];
+
 /**
  * Validator for candidate profile update payload.
  */
@@ -23,6 +34,7 @@ const validateProfileUpdate = (req, res, next) => {
     skills,
     experienceLevel,
     yearsOfExperience,
+    targetRole,
     education,
   } = req.body;
 
@@ -72,6 +84,16 @@ const validateProfileUpdate = (req, res, next) => {
     (typeof yearsOfExperience !== 'number' || yearsOfExperience < 0)
   ) {
     errors.push('yearsOfExperience must be a non-negative number');
+  }
+
+  if (targetRole !== undefined && targetRole !== null && targetRole !== '') {
+    if (typeof targetRole !== 'string' || !ALLOWED_TARGET_ROLES.includes(targetRole)) {
+      errors.push(
+        `targetRole must be one of: ${ALLOWED_TARGET_ROLES.join(', ')}`
+      );
+    }
+  } else if (targetRole === '') {
+    req.body.targetRole = null;
   }
 
   if (education !== undefined && !Array.isArray(education)) {

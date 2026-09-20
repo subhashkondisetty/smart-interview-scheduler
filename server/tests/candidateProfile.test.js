@@ -234,6 +234,126 @@ describe('Candidate Profile API (GET/PUT /api/candidate/profile & Ownership Enfo
       expect(res.body.errors).toContain('skills must be an array of strings');
       expect(res.body.errors).toContain('yearsOfExperience must be a non-negative number');
     });
+
+    test('should successfully update targetRole with valid enum values (including Data Scientist/ML Engineer)', async () => {
+      jest.spyOn(User, 'findById').mockResolvedValue({
+        _id: candidateAId,
+        email: 'candidateA@test.com',
+        role: 'candidate',
+        isActive: true,
+      });
+
+      const existingProfile = new CandidateProfile({
+        user: candidateAId,
+        fullName: 'Alice Developer',
+      });
+
+      jest.spyOn(CandidateProfile, 'findOne').mockResolvedValue(existingProfile);
+      jest.spyOn(existingProfile, 'save').mockResolvedValue(existingProfile);
+      jest.spyOn(CandidateProfile, 'findById').mockReturnValue({
+        populate: jest.fn().mockImplementation(() => ({
+          ...existingProfile.toJSON(),
+          targetRole: 'Data Scientist/ML Engineer',
+          user: { _id: candidateAId, email: 'candidateA@test.com' },
+        })),
+      });
+
+      const res = await request(app)
+        .put('/api/candidate/profile')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ targetRole: 'Data Scientist/ML Engineer' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.profile.targetRole).toBe('Data Scientist/ML Engineer');
+      expect(existingProfile.targetRole).toBe('Data Scientist/ML Engineer');
+    });
+
+    test('should normalize empty string targetRole to null', async () => {
+      jest.spyOn(User, 'findById').mockResolvedValue({
+        _id: candidateAId,
+        email: 'candidateA@test.com',
+        role: 'candidate',
+        isActive: true,
+      });
+
+      const existingProfile = new CandidateProfile({
+        user: candidateAId,
+        fullName: 'Alice Developer',
+        targetRole: 'Backend Developer',
+      });
+
+      jest.spyOn(CandidateProfile, 'findOne').mockResolvedValue(existingProfile);
+      jest.spyOn(existingProfile, 'save').mockResolvedValue(existingProfile);
+      jest.spyOn(CandidateProfile, 'findById').mockReturnValue({
+        populate: jest.fn().mockImplementation(() => ({
+          ...existingProfile.toJSON(),
+          targetRole: null,
+          user: { _id: candidateAId, email: 'candidateA@test.com' },
+        })),
+      });
+
+      const res = await request(app)
+        .put('/api/candidate/profile')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ targetRole: '' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(existingProfile.targetRole).toBeNull();
+    });
+
+    test('should reject invalid targetRole with 400 Bad Request', async () => {
+      jest.spyOn(User, 'findById').mockResolvedValue({
+        _id: candidateAId,
+        email: 'candidateA@test.com',
+        role: 'candidate',
+        isActive: true,
+      });
+
+      const res = await request(app)
+        .put('/api/candidate/profile')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ targetRole: 'Astronaut & Deep Space Pilot' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors).toEqual(
+        expect.arrayContaining([expect.stringContaining('targetRole must be one of')])
+      );
+    });
+
+    test('CandidateProfile Mongoose schema validates targetRole enum values', () => {
+      const allowedRoles = [
+        'Frontend Developer',
+        'Backend Developer',
+        'Full Stack Developer',
+        'Mobile Developer',
+        'Data Scientist/ML Engineer',
+        'DevOps Engineer',
+        'QA/SDET',
+        'Other',
+      ];
+
+      for (const role of allowedRoles) {
+        const doc = new CandidateProfile({ user: candidateAId, targetRole: role });
+        const err = doc.validateSync(['targetRole']);
+        expect(err).toBeUndefined();
+      }
+
+      // Null and undefined must be valid (optional)
+      const docNull = new CandidateProfile({ user: candidateAId, targetRole: null });
+      expect(docNull.validateSync(['targetRole'])).toBeUndefined();
+
+      const docUndefined = new CandidateProfile({ user: candidateAId });
+      expect(docUndefined.validateSync(['targetRole'])).toBeUndefined();
+
+      // Invalid role must fail Mongoose validation
+      const docInvalid = new CandidateProfile({ user: candidateAId, targetRole: 'Invalid Role' });
+      const errInvalid = docInvalid.validateSync(['targetRole']);
+      expect(errInvalid).toBeDefined();
+      expect(errInvalid.errors.targetRole).toBeDefined();
+    });
   });
 
   describe('Ownership Violation Enforcement', () => {

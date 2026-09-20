@@ -14,7 +14,7 @@ const getAdminResults = asyncHandler(async (req, res) => {
   const requestedLimit = parseInt(req.query.limit, 10);
   const limit = !isNaN(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 100) : 10;
 
-  const { search, assessmentId, candidateId, status, passed, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+  const { search, assessmentId, candidateId, status, passed, targetRole, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
   // Defensive fallback for unit test mocks running with disconnected Mongoose
   if (mongoose.connection.readyState === 0 && process.env.NODE_ENV === 'test') {
@@ -104,6 +104,15 @@ const getAdminResults = asyncHandler(async (req, res) => {
     });
   }
 
+  // Filter by candidate targetRole
+  if (targetRole && targetRole !== 'all' && typeof targetRole === 'string' && targetRole.trim().length > 0) {
+    pipeline.push({
+      $match: {
+        'candidateProfile.targetRole': targetRole.trim(),
+      },
+    });
+  }
+
   // Compute Platform Metrics & Paginated Data in parallel via facet
   const sortDirection = sortOrder === 'asc' ? 1 : -1;
   const sortFieldMap = {
@@ -147,6 +156,7 @@ const getAdminResults = asyncHandler(async (req, res) => {
               fullName: '$candidateProfile.fullName',
               headline: '$candidateProfile.headline',
               experienceLevel: '$candidateProfile.experienceLevel',
+              targetRole: '$candidateProfile.targetRole',
             },
             assessment: {
               _id: '$assessment._id',
@@ -277,7 +287,7 @@ const getAdminResultById = asyncHandler(async (req, res) => {
   let candidateProfile = null;
   if (candidateUser?._id) {
     candidateProfile = await CandidateProfile.findOne({ user: candidateUser._id })
-      .select('fullName headline skills experienceLevel location')
+      .select('fullName headline skills experienceLevel location targetRole')
       .lean();
   }
 
@@ -302,6 +312,7 @@ const getAdminResultById = asyncHandler(async (req, res) => {
           headline: candidateProfile?.headline || '',
           skills: candidateProfile?.skills || [],
           experienceLevel: candidateProfile?.experienceLevel || 'unknown',
+          targetRole: candidateProfile?.targetRole || null,
         },
         assessment,
       },

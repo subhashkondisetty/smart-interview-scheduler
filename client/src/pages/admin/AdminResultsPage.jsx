@@ -22,6 +22,7 @@ const AdminResultsPage = () => {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [passedFilter, setPassedFilter] = useState('all');
+  const [targetRoleFilter, setTargetRoleFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -73,6 +74,9 @@ const AdminResultsPage = () => {
       if (passedFilter && passedFilter !== 'all') {
         params.passed = passedFilter === 'passed';
       }
+      if (targetRoleFilter && targetRoleFilter !== 'all') {
+        params.targetRole = targetRoleFilter;
+      }
 
       const res = await adminService.getResults(params);
 
@@ -89,7 +93,7 @@ const AdminResultsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, selectedAssessmentId, statusFilter, passedFilter]);
+  }, [page, searchQuery, selectedAssessmentId, statusFilter, passedFilter, targetRoleFilter]);
 
   useEffect(() => {
     fetchResults();
@@ -122,6 +126,7 @@ const AdminResultsPage = () => {
     setSelectedAssessmentId('all');
     setStatusFilter('all');
     setPassedFilter('all');
+    setTargetRoleFilter('all');
     setPage(1);
   };
 
@@ -252,6 +257,33 @@ const AdminResultsPage = () => {
             </select>
           </div>
 
+          {/* Target Role Filter Dropdown */}
+          <div className="filter-select-group">
+            <label htmlFor="filter-target-role" className="filter-label">
+              Target Role:
+            </label>
+            <select
+              id="filter-target-role"
+              data-testid="filter-target-role"
+              className="form-control"
+              value={targetRoleFilter}
+              onChange={(e) => {
+                setTargetRoleFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">All Target Roles</option>
+              <option value="Frontend Developer">Frontend Developer</option>
+              <option value="Backend Developer">Backend Developer</option>
+              <option value="Full Stack Developer">Full Stack Developer</option>
+              <option value="Mobile Developer">Mobile Developer</option>
+              <option value="Data Scientist/ML Engineer">Data Scientist/ML Engineer</option>
+              <option value="DevOps Engineer">DevOps Engineer</option>
+              <option value="QA/SDET">QA/SDET</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
           {/* Status Filter Pills */}
           <div className="filter-pills">
             <span className="filter-label">Status:</span>
@@ -321,7 +353,7 @@ const AdminResultsPage = () => {
               ? 'No candidate assessment attempts have been recorded yet.'
               : 'No attempts matched your current search and filter criteria.'}
           </p>
-          {(searchQuery || selectedAssessmentId !== 'all' || statusFilter !== 'all' || passedFilter !== 'all') && (
+          {(searchQuery || selectedAssessmentId !== 'all' || statusFilter !== 'all' || passedFilter !== 'all' || targetRoleFilter !== 'all') && (
             <button onClick={handleResetFilters} className="btn btn-primary mt-3">
               Reset Filters
             </button>
@@ -352,11 +384,18 @@ const AdminResultsPage = () => {
                         {item.candidate?.fullName || 'Unprofiled Candidate'}
                       </span>
                       <span className="text-muted text-xs">{item.candidate?.email}</span>
-                      {item.candidate?.experienceLevel && (
-                        <span className="badge badge-experience mt-1">
-                          {item.candidate.experienceLevel.toUpperCase()}
-                        </span>
-                      )}
+                      <div className="d-flex gap-1 flex-wrap mt-1">
+                        {item.candidate?.targetRole && (
+                          <span className="badge badge-target-role" data-testid={`result-target-role-${item._id}`}>
+                            🎯 {item.candidate.targetRole}
+                          </span>
+                        )}
+                        {item.candidate?.experienceLevel && (
+                          <span className="badge badge-experience">
+                            {item.candidate.experienceLevel.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
 
@@ -501,9 +540,21 @@ const AdminResultsPage = () => {
                       <div>
                         <span className="badge badge-primary mb-2">Attempt #{selectedAttempt.attemptNumber}</span>
                         <h2>{selectedAttempt.assessment?.title}</h2>
-                        <p className="text-muted">
+                        <p className="text-muted mb-1">
                           Candidate: <strong>{selectedAttempt.candidate?.fullName}</strong> ({selectedAttempt.candidate?.email})
                         </p>
+                        <div className="d-flex gap-1 flex-wrap mt-1">
+                          {selectedAttempt.candidate?.targetRole && (
+                            <span className="badge badge-target-role" data-testid="detail-modal-target-role">
+                              🎯 Target Role: {selectedAttempt.candidate.targetRole}
+                            </span>
+                          )}
+                          {selectedAttempt.candidate?.experienceLevel && (
+                            <span className="badge badge-experience">
+                              {selectedAttempt.candidate.experienceLevel.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="detail-hero-score text-right">
                         <div className="huge-percentage font-bold text-primary" style={{ fontSize: '2.5rem' }}>

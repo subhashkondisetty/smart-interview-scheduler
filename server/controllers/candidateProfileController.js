@@ -67,6 +67,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     'skills',
     'experienceLevel',
     'yearsOfExperience',
+    'targetRole',
     'education',
   ];
 

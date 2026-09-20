@@ -121,6 +121,7 @@ const getCandidateDashboard = asyncHandler(async (req, res) => {
     success: true,
     data: {
       profileCompletionPercentage,
+      targetRole: profile?.targetRole || null,
       nextUpcomingInterview,
       recentAttempts: recentAttempts || [],
       averageScore,

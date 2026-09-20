@@ -383,17 +383,39 @@ async function runAudit() {
         bio: 'Automated audit verification account',
         skills: ['JavaScript', 'React', 'Node.js', 'MongoDB'],
         experienceLevel: 'senior',
+        targetRole: 'Data Scientist/ML Engineer',
         yearsOfExperience: 6,
       }),
     });
     const completionScore =
       updateRes.data.data?.profile?.profileCompletionPercentage ??
       updateRes.data.data?.profileCompletionPercentage;
+    const updatedTargetRole =
+      updateRes.data.data?.profile?.targetRole ??
+      updateRes.data.data?.targetRole;
     logCheck(
       'DIM-5',
       'PUT /candidate/profile updates profile and computes score',
       updateRes.res.status === 200 && completionScore > 0,
       `Score: ${completionScore}%`
+    );
+    logCheck(
+      'DIM-5',
+      'PUT /candidate/profile persists targetRole ("Data Scientist/ML Engineer")',
+      updateRes.res.status === 200 && updatedTargetRole === 'Data Scientist/ML Engineer',
+      `Target Role: ${updatedTargetRole}`
+    );
+
+    // Live Admin Candidates Target Role Filter Check (auto-encoded slash)
+    const adminCandRes = await request(`${API_URL}/admin/candidates?targetRole=Data%20Scientist%2FML%20Engineer`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const adminCandList = adminCandRes.data.data?.candidates || [];
+    const matchedCandidate = adminCandList.find((c) => c.email === TEST_CANDIDATE_EMAIL);
+    logCheck(
+      'DIM-5',
+      'GET /admin/candidates filters by targetRole="Data Scientist/ML Engineer" (encoded slash)',
+      adminCandRes.res.status === 200 && !!matchedCandidate && matchedCandidate.profile?.targetRole === 'Data Scientist/ML Engineer'
     );
 
     // Resume Upload: Upload valid dummy PDF
@@ -549,6 +571,18 @@ async function runAudit() {
         });
         const hasAttempt = (histRes.data.data?.attempts || []).some((a) => a._id === createdAttemptId);
         logCheck('DIM-7', 'GET /candidate/attempts records completed attempt', hasAttempt);
+
+        // Live Admin Results Target Role Filter Check (auto-encoded slash)
+        const adminResultsRes = await request(`${API_URL}/admin/results?targetRole=Data%20Scientist%2FML%20Engineer`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+        const adminResultsList = adminResultsRes.data.data?.results || [];
+        const matchedAttempt = adminResultsList.find((r) => r._id === createdAttemptId);
+        logCheck(
+          'DIM-7',
+          'GET /admin/results filters by targetRole="Data Scientist/ML Engineer" (encoded slash)',
+          adminResultsRes.res.status === 200 && !!matchedAttempt && matchedAttempt.candidate?.targetRole === 'Data Scientist/ML Engineer'
+        );
       }
     }
   }

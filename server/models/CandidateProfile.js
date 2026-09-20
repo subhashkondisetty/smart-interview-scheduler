@@ -74,6 +74,20 @@ const candidateProfileSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    targetRole: {
+      type: String,
+      enum: [
+        'Frontend Developer',
+        'Backend Developer',
+        'Full Stack Developer',
+        'Mobile Developer',
+        'Data Scientist/ML Engineer',
+        'DevOps Engineer',
+        'QA/SDET',
+        'Other',
+      ],
+      default: null,
+    },
     education: {
       type: [educationSchema],
       default: [],
