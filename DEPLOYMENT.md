@@ -40,6 +40,7 @@ This document details the exact steps, environment configurations, operational r
 | `EMAIL_PASS` | Recommended | `SG.xxxxxxxxxxxxxxxxxxxx` | SMTP authentication password / API key. |
 | `EMAIL_FROM` | Recommended | `"SmartPrep Platform" <no-reply@smartprep.com>` | Sender name and address for booking and assessment notification emails. |
 | `ENABLE_SWAGGER` | No | `false` | Set to `true` only if public OpenAPI / Swagger documentation (`/api-docs`) should be exposed in production. Defaults to `false`. |
+| `ADMIN_DEFAULT_PASSWORD` | **Yes (for seeding)** | `Sm4rtPrep!Adm1n#2026$Secure` | Secret password required in production when executing `npm run seed:admin`. Code default fallback is strictly rejected in production. |
 
 > [!IMPORTANT]
 > If SMTP credentials (`EMAIL_HOST`, `EMAIL_USER`, `EMAIL_PASS`) are omitted or incomplete in production, the application will not crash: emails will log a simulated dispatch warning (`[EmailService] SMTP credentials not fully configured. Email was simulated.`), and all booking/assessment database operations will complete successfully without interruption.

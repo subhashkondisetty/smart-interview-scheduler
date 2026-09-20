@@ -18,7 +18,7 @@ const API_URL = `${BASE_URL}/api`;
 const FRONTEND_ORIGIN = process.env.LIVE_FRONTEND_URL || 'https://smart-interview-scheduler-chi.vercel.app';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@smartprep.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Password123!';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Sm4rtPrep!Adm1n#2026$Secure';
 
 const timestamp = Date.now();
 const TEST_CANDIDATE_EMAIL = `audit.cand.${timestamp}@smartprep.test`;
