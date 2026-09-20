@@ -28,6 +28,7 @@ const {
   getAdminCandidates,
   getAdminCandidateById,
   updateCandidateStatus,
+  deleteCandidate,
 } = require('../controllers/adminCandidateController');
 
 /**
@@ -58,6 +59,7 @@ router.get('/dashboard', authenticate, requireRole('admin'), getAdminDashboard);
 router.get('/candidates', authenticate, requireRole('admin'), getAdminCandidates);
 router.get('/candidates/:id', authenticate, requireRole('admin'), getAdminCandidateById);
 router.patch('/candidates/:id/status', authenticate, requireRole('admin'), updateCandidateStatus);
+router.delete('/candidates/:id', authenticate, requireRole('admin'), deleteCandidate);
 
 /**
  * Interview Slot Management Routes (Admin only)

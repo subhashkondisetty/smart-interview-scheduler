@@ -3,7 +3,38 @@ const app = require('./app');
 const { connectDB, closeDB } = require('./config/db');
 const { startExpiryCron, stopExpiryCron } = require('./services/cronService');
 
+const User = require('./models/User');
+
 const PORT = process.env.PORT || 5000;
+
+const bootstrapAdmin = async () => {
+  try {
+    const adminEmail = (process.env.ADMIN_DEFAULT_EMAIL || 'admin@smartprep.com').toLowerCase().trim();
+    const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Password123!';
+
+    const existingAdmin = await User.findOne({ role: 'admin' });
+    if (!existingAdmin) {
+      const user = await User.findOne({ email: adminEmail });
+      if (user) {
+        user.role = 'admin';
+        user.password = adminPassword;
+        user.isActive = true;
+        await user.save();
+        console.log(`[Bootstrap] Promoted existing account ${adminEmail} to administrator.`);
+      } else {
+        await User.create({
+          email: adminEmail,
+          password: adminPassword,
+          role: 'admin',
+          isActive: true,
+        });
+        console.log(`[Bootstrap] Created initial platform administrator: ${adminEmail}`);
+      }
+    }
+  } catch (err) {
+    console.error(`[Bootstrap] Error initializing administrator: ${err.message}`);
+  }
+};
 
 const startServer = async () => {
   try {
@@ -15,6 +46,9 @@ const startServer = async () => {
     }
 
     await connectDB();
+
+    // Ensure platform administrator exists
+    await bootstrapAdmin();
 
     // Start background auto-expiry cron task
     startExpiryCron();

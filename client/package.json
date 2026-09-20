@@ -20,7 +20,10 @@
     "verify:admin-slots-bookings:real": "node scripts/verify-real-backend-admin-slots-bookings.js",
     "verify:admin-assessments:real": "node scripts/verify-real-backend-admin-assessments-questions.js",
     "verify:admin-results:real": "node scripts/verify-real-backend-admin-results-notifications.js",
-    "verify:journeys:real": "node scripts/verify-continuous-journeys.js"
+    "verify:journeys:real": "node scripts/verify-continuous-journeys.js",
+    "verify:production:api": "node scripts/verify-production-api.js",
+    "verify:production:frontend": "node scripts/verify-production-frontend.js",
+    "verify:production": "node scripts/verify-production-api.js && node scripts/verify-production-frontend.js"
   },
   "dependencies": {
     "axios": "^1.7.9",

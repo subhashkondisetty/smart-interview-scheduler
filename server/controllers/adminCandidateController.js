@@ -1,8 +1,12 @@
+const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const CandidateProfile = require('../models/CandidateProfile');
 const InterviewBooking = require('../models/InterviewBooking');
+const InterviewSlot = require('../models/InterviewSlot');
 const AssessmentAttempt = require('../models/AssessmentAttempt');
+const Notification = require('../models/Notification');
 const asyncHandler = require('../utils/asyncHandler');
 const { escapeRegex } = require('../utils/regexEscape');
 
@@ -290,8 +294,75 @@ const updateCandidateStatus = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Delete candidate account and cascade cleanup of all associated data
+ * @route   DELETE /api/admin/candidates/:id
+ * @access  Private (Admin only)
+ */
+const deleteCandidate = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid candidate ID format',
+    });
+  }
+
+  const user = await User.findOne({ _id: id, role: 'candidate' });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'Candidate not found',
+    });
+  }
+
+  // 1. Delete resume file on disk if exists
+  const profile = await CandidateProfile.findOne({ user: user._id });
+  if (profile && profile.resume && profile.resume.fileName) {
+    const filePath = path.join(__dirname, '..', 'uploads', 'resumes', profile.resume.fileName);
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (err) {
+        console.warn(`[Candidate Delete] Failed to unlink resume file: ${err.message}`);
+      }
+    }
+  }
+  if (profile) {
+    await CandidateProfile.findByIdAndDelete(profile._id);
+  }
+
+  // 2. Cascade cleanup interview bookings and restore slot capacity
+  const bookings = await InterviewBooking.find({ candidate: user._id });
+  for (const booking of bookings) {
+    if (booking.status === 'confirmed') {
+      await InterviewSlot.findByIdAndUpdate(booking.slot, {
+        $inc: { bookedCount: -1 },
+        $set: { status: 'available' },
+      });
+    }
+  }
+  await InterviewBooking.deleteMany({ candidate: user._id });
+
+  // 3. Delete assessment attempts
+  await AssessmentAttempt.deleteMany({ candidateId: user._id });
+
+  // 4. Delete notifications
+  await Notification.deleteMany({ userId: user._id });
+
+  // 5. Delete candidate user account
+  await User.findByIdAndDelete(user._id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Candidate account and associated records deleted successfully',
+  });
+});
+
 module.exports = {
   getAdminCandidates,
   getAdminCandidateById,
   updateCandidateStatus,
+  deleteCandidate,
 };
