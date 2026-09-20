@@ -8,6 +8,9 @@ const InterviewSlot = require('../models/InterviewSlot');
 const InterviewBooking = require('../models/InterviewBooking');
 const Assessment = require('../models/Assessment');
 const AssessmentAttempt = require('../models/AssessmentAttempt');
+const Notification = require('../models/Notification');
+const fs = require('fs');
+const path = require('path');
 
 describe('Admin Candidate Management & Lifecycle Controller', () => {
   let mongod;
@@ -399,4 +402,139 @@ describe('Admin Candidate Management & Lifecycle Controller', () => {
       expect(loginRes.body.success).toBe(true);
     });
   });
+
+  describe('6. DELETE /api/admin/candidates/:id (Cascade Deletion & RBAC)', () => {
+    test('6a. Rejects unauthenticated request with 401 Unauthorized', async () => {
+      const res = await request(app).delete(`/api/admin/candidates/${candidateUserC._id}`);
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('6b. Rejects candidate token with 403 Forbidden', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/candidates/${candidateUserC._id}`)
+        .set('Authorization', `Bearer ${candidateToken}`);
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('6c. Rejects invalid ObjectId format with 400 Bad Request', async () => {
+      const res = await request(app)
+        .delete('/api/admin/candidates/invalid-id-format')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/invalid candidate id format/i);
+    });
+
+    test('6d. Rejects non-existent candidate with 404 Not Found', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .delete(`/api/admin/candidates/${nonExistentId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/candidate not found/i);
+    });
+
+    test('6e. Admin deletes candidate with full cascade cleanup (Profile, Resume file, Bookings, Slot capacity, Attempts, Notifications, User)', async () => {
+      // 1. Create candidate user
+      const cascadeUser = await User.create({
+        email: 'cascade_candidate@example.com',
+        password: 'password123',
+        role: 'candidate',
+        isActive: true,
+      });
+
+      // 2. Create mock resume file on disk
+      const resumeDir = path.join(__dirname, '..', 'uploads', 'resumes');
+      if (!fs.existsSync(resumeDir)) {
+        fs.mkdirSync(resumeDir, { recursive: true });
+      }
+      const testResumeFile = `test_resume_${Date.now()}.pdf`;
+      const testResumePath = path.join(resumeDir, testResumeFile);
+      fs.writeFileSync(testResumePath, '%PDF-1.4 mock resume for cascade test');
+      expect(fs.existsSync(testResumePath)).toBe(true);
+
+      // 3. Create CandidateProfile
+      await CandidateProfile.create({
+        user: cascadeUser._id,
+        fullName: 'Cascade Target Candidate',
+        skills: ['Node.js', 'Jest'],
+        profileCompletionPercentage: 80,
+        resume: {
+          url: `/uploads/resumes/${testResumeFile}`,
+          fileName: testResumeFile,
+          originalName: 'MyResume.pdf',
+          uploadedAt: new Date(),
+        },
+      });
+
+      // 4. Create InterviewSlot with capacity 2 and bookedCount 1
+      const cascadeSlot = await InterviewSlot.create({
+        createdBy: adminUser._id,
+        title: 'Cascade Capacity Test Slot',
+        startTime: new Date(Date.now() + 86400000),
+        endTime: new Date(Date.now() + 90000000),
+        durationMinutes: 60,
+        capacity: 2,
+        bookedCount: 1,
+        status: 'available',
+      });
+
+      // 5. Create confirmed booking linked to candidate and slot
+      await InterviewBooking.create({
+        candidate: cascadeUser._id,
+        slot: cascadeSlot._id,
+        status: 'confirmed',
+      });
+
+      // 6. Create assessment attempt
+      await AssessmentAttempt.create({
+        candidateId: cascadeUser._id,
+        assessmentId: assessmentDoc._id,
+        attemptNumber: 1,
+        startTime: new Date(Date.now() - 1800000),
+        expiresAt: new Date(Date.now() + 1800000),
+        endTime: new Date(Date.now() - 600000),
+        status: 'completed',
+        score: 10,
+        totalMarks: 10,
+        percentage: 100,
+        passed: true,
+      });
+
+      // 7. Create notification
+      await Notification.create({
+        userId: cascadeUser._id,
+        type: 'booking_confirmed',
+        message: 'Your interview booking is confirmed.',
+      });
+
+      // Execute DELETE /api/admin/candidates/:id
+      const deleteRes = await request(app)
+        .delete(`/api/admin/candidates/${cascadeUser._id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(deleteRes.status).toBe(200);
+      expect(deleteRes.body.success).toBe(true);
+      expect(deleteRes.body.message).toMatch(/deleted successfully/i);
+
+      // Verify all candidate entities are removed from MongoDB
+      expect(await User.findById(cascadeUser._id)).toBeNull();
+      expect(await CandidateProfile.findOne({ user: cascadeUser._id })).toBeNull();
+      expect(await InterviewBooking.findOne({ candidate: cascadeUser._id })).toBeNull();
+      expect(await AssessmentAttempt.findOne({ candidateId: cascadeUser._id })).toBeNull();
+      expect(await Notification.findOne({ userId: cascadeUser._id })).toBeNull();
+
+      // Verify slot capacity was released (bookedCount decremented from 1 to 0, status available)
+      const slotAfter = await InterviewSlot.findById(cascadeSlot._id);
+      expect(slotAfter.bookedCount).toBe(0);
+      expect(slotAfter.status).toBe('available');
+
+      // Verify resume file was unlinked from disk
+      expect(fs.existsSync(testResumePath)).toBe(false);
+    });
+  });
 });
+

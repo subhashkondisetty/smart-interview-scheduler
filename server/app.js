@@ -94,10 +94,10 @@ const generalLimiter = rateLimit({
 });
 app.use('/api', generalLimiter);
 
-// Strict Authentication Limiter: 50 attempts per 15 minutes per IP
+// Strict Authentication Limiter: 10 attempts per 15 minutes per IP
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
