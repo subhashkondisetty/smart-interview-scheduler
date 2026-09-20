@@ -5,10 +5,16 @@
  * to a high-entropy secret, and verifies that the old default password is permanently revoked.
  */
 
-const API_URL = 'https://smart-interview-scheduler-api-flgk.onrender.com/api';
-const ADMIN_EMAIL = 'admin@smartprep.com';
-const OLD_PASSWORD = process.env.OLD_ADMIN_PASSWORD || 'Password123!';
-const NEW_PASSWORD = process.env.NEW_ADMIN_PASSWORD || 'Sm4rtPrep!Adm1n#2026$Secure';
+const API_URL = process.env.LIVE_BACKEND_URL || 'https://smart-interview-scheduler-api-flgk.onrender.com/api';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@smartprep.com';
+const OLD_PASSWORD = process.env.OLD_ADMIN_PASSWORD;
+const NEW_PASSWORD = process.env.NEW_ADMIN_PASSWORD;
+
+if (!OLD_PASSWORD || !NEW_PASSWORD) {
+  console.error('FATAL: OLD_ADMIN_PASSWORD and NEW_ADMIN_PASSWORD environment variables are strictly required.');
+  console.error('Usage: OLD_ADMIN_PASSWORD=xxx NEW_ADMIN_PASSWORD=yyy node scripts/rotate-live-admin-password.js');
+  process.exit(1);
+}
 
 async function request(url, options = {}) {
   const res = await fetch(url, options);
