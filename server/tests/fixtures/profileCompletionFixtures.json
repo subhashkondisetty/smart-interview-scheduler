@@ -1,0 +1,256 @@
+[
+  {
+    "name": "Empty profile",
+    "profile": {},
+    "expectedPercentage": 0,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Full name only",
+    "profile": {
+      "fullName": "Jane Doe"
+    },
+    "expectedPercentage": 10,
+    "expectedSections": {
+      "fullName": true,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Full name and phone (Basic Contact complete)",
+    "profile": {
+      "fullName": "Jane Doe",
+      "phone": "+1234567890"
+    },
+    "expectedPercentage": 20,
+    "expectedSections": {
+      "fullName": true,
+      "phoneOrLocation": true,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Full name and location (Basic Contact complete without phone)",
+    "profile": {
+      "fullName": "Jane Doe",
+      "location": "San Francisco, CA"
+    },
+    "expectedPercentage": 20,
+    "expectedSections": {
+      "fullName": true,
+      "phoneOrLocation": true,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Professional overview (headline only)",
+    "profile": {
+      "headline": "Full Stack Engineer"
+    },
+    "expectedPercentage": 15,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": true,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Professional overview (bio only)",
+    "profile": {
+      "bio": "Building full stack web applications."
+    },
+    "expectedPercentage": 15,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": true,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Skills (single skill)",
+    "profile": {
+      "skills": ["JavaScript"]
+    },
+    "expectedPercentage": 20,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": true,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Skills (multiple skills)",
+    "profile": {
+      "skills": ["React", "Node.js", "MongoDB"]
+    },
+    "expectedPercentage": 20,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": true,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Education (with institution)",
+    "profile": {
+      "education": [
+        { "institution": "MIT" }
+      ]
+    },
+    "expectedPercentage": 20,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": true,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Education (with degree only)",
+    "profile": {
+      "education": [
+        { "degree": "B.S. Computer Science" }
+      ]
+    },
+    "expectedPercentage": 20,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": true,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "Education incomplete (no institution or degree)",
+    "profile": {
+      "education": [
+        { "gpa": "3.9" }
+      ]
+    },
+    "expectedPercentage": 0,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": false
+    }
+  },
+  {
+    "name": "External links (GitHub only)",
+    "profile": {
+      "githubUrl": "https://github.com/janedoe"
+    },
+    "expectedPercentage": 10,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": true,
+      "resume": false
+    }
+  },
+  {
+    "name": "Resume uploaded",
+    "profile": {
+      "resume": {
+        "url": "/api/candidate/profile/resume",
+        "fileName": "resume-123.pdf"
+      }
+    },
+    "expectedPercentage": 15,
+    "expectedSections": {
+      "fullName": false,
+      "phoneOrLocation": false,
+      "overview": false,
+      "skills": false,
+      "education": false,
+      "links": false,
+      "resume": true
+    }
+  },
+  {
+    "name": "Fully populated profile (100%)",
+    "profile": {
+      "fullName": "Jane Doe",
+      "phone": "+1234567890",
+      "location": "San Francisco, CA",
+      "headline": "Full Stack Engineer",
+      "bio": "Building modern web platforms.",
+      "skills": ["React", "Node.js", "TypeScript"],
+      "education": [
+        {
+          "institution": "Stanford University",
+          "degree": "M.S. Software Engineering",
+          "fieldOfStudy": "Computer Science",
+          "graduationYear": 2024,
+          "gpa": "3.95"
+        }
+      ],
+      "githubUrl": "https://github.com/janedoe",
+      "linkedinUrl": "https://linkedin.com/in/janedoe",
+      "portfolioUrl": "https://janedoe.dev",
+      "resume": {
+        "url": "/api/candidate/profile/resume",
+        "fileName": "resume-123.pdf"
+      }
+    },
+    "expectedPercentage": 100,
+    "expectedSections": {
+      "fullName": true,
+      "phoneOrLocation": true,
+      "overview": true,
+      "skills": true,
+      "education": true,
+      "links": true,
+      "resume": true
+    }
+  }
+]

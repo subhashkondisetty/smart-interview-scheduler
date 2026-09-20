@@ -1,0 +1,36 @@
+{
+  "name": "smart-interview-scheduler-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "verify:auth": "node scripts/verify-runtime-auth.js",
+    "verify:parity": "node scripts/verify-profile-completion-parity.js",
+    "verify:profile": "node scripts/verify-profile-completion-parity.js && node scripts/verify-candidate-profile.js",
+    "verify:interviews": "node scripts/verify-candidate-interviews.js",
+    "verify:interviews:real": "node scripts/verify-real-backend-interviews.js",
+    "verify:assessments:real": "node scripts/verify-real-backend-assessments.js",
+    "verify:analytics:real": "node scripts/verify-real-backend-analytics.js",
+    "verify:notifications:real": "node scripts/verify-real-backend-notifications.js",
+    "verify:admin:real": "node scripts/verify-real-backend-admin-dashboard.js",
+    "verify:admin-candidates:real": "node scripts/verify-real-backend-admin-candidates.js",
+    "verify:admin-slots-bookings:real": "node scripts/verify-real-backend-admin-slots-bookings.js",
+    "verify:admin-assessments:real": "node scripts/verify-real-backend-admin-assessments-questions.js",
+    "verify:admin-results:real": "node scripts/verify-real-backend-admin-results-notifications.js",
+    "verify:journeys:real": "node scripts/verify-continuous-journeys.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "puppeteer-core": "^25.11.0",
+    "vite": "^6.1.0"
+  }
+}
