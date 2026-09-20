@@ -215,6 +215,46 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Update authenticated user password
+ * @route   PUT /api/auth/update-password
+ * @access  Private (authenticated user)
+ */
+const updatePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+  }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Current password is incorrect',
+    });
+  }
+
+  user.password = newPassword;
+  user.lastLogoutAt = new Date();
+  await user.save();
+
+  const token = user.generateAuthToken();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password updated successfully',
+    data: {
+      token,
+      user,
+    },
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -222,4 +262,5 @@ module.exports = {
   getMe,
   forgotPassword,
   resetPassword,
+  updatePassword,
 };

@@ -385,4 +385,84 @@ describe('Auth API Endpoints (POST /register, POST /login, POST /logout, GET /me
       expect(fakeUser.lastLogoutAt).toBeInstanceOf(Date);
     });
   });
+
+  describe('PUT /api/auth/update-password', () => {
+    const userId = '507f1f77bcf86cd799439011';
+    const token = jwt.sign({ id: userId, email: 'updatepw@example.com', role: 'candidate' }, secret, {
+      expiresIn: '1h',
+    });
+
+    const mockUserFindById = (overrides = {}) => {
+      const u = {
+        _id: userId,
+        email: 'updatepw@example.com',
+        role: 'candidate',
+        isActive: true,
+        lastLogoutAt: null,
+        comparePassword: jest.fn().mockResolvedValue(true),
+        save: jest.fn().mockResolvedValue(true),
+        generateAuthToken: () => jwt.sign({ id: userId, email: 'updatepw@example.com', role: 'candidate' }, secret),
+        ...overrides,
+      };
+      jest.spyOn(User, 'findById').mockImplementation(() => {
+        const query = Promise.resolve(u);
+        query.select = jest.fn().mockReturnValue(Promise.resolve(u));
+        return query;
+      });
+      return u;
+    };
+
+    test('should reject unauthenticated request with 401', async () => {
+      const res = await request(app)
+        .put('/api/auth/update-password')
+        .send({ currentPassword: 'OldPassword1!', newPassword: 'NewPassword2!' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('should validate input payload (min 8 chars, distinct passwords)', async () => {
+      mockUserFindById();
+
+      const res = await request(app)
+        .put('/api/auth/update-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'OldPassword1!', newPassword: 'OldPassword1!' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors).toContain('New password must be different from current password');
+    });
+
+    test('should reject when current password does not match with 401', async () => {
+      mockUserFindById({
+        comparePassword: jest.fn().mockResolvedValue(false),
+      });
+
+      const res = await request(app)
+        .put('/api/auth/update-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'WrongCurrentPassword!', newPassword: 'NewPassword2!' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/current password is incorrect/i);
+    });
+
+    test('should successfully update password and issue fresh JWT', async () => {
+      const fakeUser = mockUserFindById();
+
+      const res = await request(app)
+        .put('/api/auth/update-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'OldPassword1!', newPassword: 'NewPassword2!' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toMatch(/password updated successfully/i);
+      expect(fakeUser.password).toBe('NewPassword2!');
+      expect(fakeUser.save).toHaveBeenCalled();
+      expect(res.body.data).toHaveProperty('token');
+    });
+  });
 });

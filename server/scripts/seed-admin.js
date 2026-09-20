@@ -24,6 +24,13 @@ const seedAdmin = async () => {
     const adminEmail = (process.env.ADMIN_DEFAULT_EMAIL || 'admin@smartprep.com').toLowerCase().trim();
     const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Password123!';
 
+    // Strict Production Secret Enforcement
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.ADMIN_DEFAULT_PASSWORD || process.env.ADMIN_DEFAULT_PASSWORD === 'Password123!') {
+        throw new Error('FATAL: In production, ADMIN_DEFAULT_PASSWORD must be explicitly configured as a non-default secret in environment variables.');
+      }
+    }
+
     // Check if any admin account already exists
     const existingAdmin = await User.findOne({ role: 'admin' });
     if (existingAdmin) {

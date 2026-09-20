@@ -7,12 +7,14 @@ const {
   getMe,
   forgotPassword,
   resetPassword,
+  updatePassword,
 } = require('../controllers/authController');
 const {
   validateRegister,
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
+  validateUpdatePassword,
 } = require('../validators/authValidator');
 const { authenticate } = require('../middleware/auth');
 
@@ -25,5 +27,6 @@ router.put('/reset-password/:token', validateResetPassword, resetPassword);
 // Protected routes
 router.post('/logout', authenticate, logout);
 router.get('/me', authenticate, getMe);
+router.put('/update-password', authenticate, validateUpdatePassword, updatePassword);
 
 module.exports = router;

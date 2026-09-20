@@ -110,6 +110,7 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
+app.use('/api/auth/update-password', authLimiter);
 
 // Dedicated File Upload Rate Limiter: 20 uploads per 15 minutes per IP
 const uploadLimiter = rateLimit({

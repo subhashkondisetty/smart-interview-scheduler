@@ -106,9 +106,40 @@ const validateResetPassword = (req, res, next) => {
   next();
 };
 
+/**
+ * Validate update password payload.
+ */
+const validateUpdatePassword = (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+  const errors = [];
+
+  if (!currentPassword || typeof currentPassword !== 'string' || !currentPassword.trim()) {
+    errors.push('Current password is required');
+  }
+
+  if (!newPassword || typeof newPassword !== 'string') {
+    errors.push('New password is required');
+  } else if (newPassword.length < 6) {
+    errors.push('New password must be at least 6 characters long');
+  } else if (currentPassword === newPassword) {
+    errors.push('New password must be different from current password');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors,
+    });
+  }
+
+  next();
+};
+
 module.exports = {
   validateRegister,
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
+  validateUpdatePassword,
 };
